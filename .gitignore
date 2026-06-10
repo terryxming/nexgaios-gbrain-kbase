@@ -1,0 +1,19 @@
+# Local OS/editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*.bak
+
+# Secrets and local environment
+.env
+.env.*
+*.pem
+*.key
+*secret*
+*token*
+*credential*
+
+# GBrain/runtime local artifacts
+.gbrain/
+node_modules/

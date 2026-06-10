@@ -1,0 +1,19 @@
+# OS noise
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Obsidian local workspace/cache
+.obsidian/workspace*.json
+.obsidian/cache/
+.obsidian/plugins/*/data.json
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+~$*
+
+# Logs
+*.log
+

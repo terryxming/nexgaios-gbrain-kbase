@@ -67,5 +67,5 @@ Codex 的核心工作场景规则放在：
 远端仓库：
 
 ```text
-https://github.com/terryxming/terry-nexgaios-gbrain
+https://github.com/terryxming/nexgaios-gbrain-kbase
 ```

@@ -4,6 +4,7 @@ Thumbs.db
 desktop.ini
 *.tmp
 *.bak
+.obsidian/
 
 # Secrets and local environment
 .env

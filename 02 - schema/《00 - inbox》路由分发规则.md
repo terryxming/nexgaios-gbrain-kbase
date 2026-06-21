@@ -1,10 +1,10 @@
 # 00 - inbox 路由分发规则
 
-版本：v0.6.0
+版本：v0.7.0
 
 生命周期：Draft
 
-日期：2026-06-20
+日期：2026-06-21
 
 适用范围：`00 - raw/00 - inbox/*`
 
@@ -87,35 +87,34 @@ Markdown 文件直接在文件开头维护 frontmatter。
 3. 缺少同名说明卡时，不进入分发，输出失败原因。
 4. 非 Markdown 原文件不得因为不能写 frontmatter 而长期保留在 inbox。
 
-## 4. Frontmatter 模板
+## 4. Frontmatter 字段契约
 
-inbox Markdown 必须使用以下字段，字段顺序固定：
-
-```yaml
----
-title:
-status: inbox
-created:
-source_type:
-material_type:
-domain_hint: unknown
-tags: []
----
-```
-
-字段只允许这 7 个：
+inbox Markdown 和非 Markdown 说明卡必须使用统一字段地图：
 
 ```text
-title
-status
-created
-source_type
-material_type
-domain_hint
-tags
+02 - schema/《全层》知识字段地图规则.md
 ```
 
-多余字段删除。
+inbox 阶段必须满足以下默认值：
+
+```yaml
+schema_version: v0.1.0
+knowledge_layer: raw
+status: inbox
+route_status: pending
+compile_status: 未编译
+domain_hint: unknown
+trust_level: raw
+retrieval_scope: explicit_only
+answer_policy: 必须提示未验证
+sync_status: pending
+```
+
+字段只允许出现在《全层》知识字段地图规则中。
+
+字段地图外的字段删除。
+
+旧字段 `created` 迁移为 `captured_at` 和 `created_at` 后删除。
 
 ## 5. 字段规则
 
@@ -166,11 +165,11 @@ compile_status: 未编译
 02 - schema/《00 - raw》编译状态规则.md
 ```
 
-### created
+### captured_at 与 created_at
 
 补全顺序：
 
-1. 已有 `created`。
+1. 已有 `captured_at` 或 `created_at`。
 2. 文件最后修改时间。
 
 格式：
@@ -256,6 +255,20 @@ Amazon
 产品
 ```
 
+### route_status
+
+inbox 阶段固定为：
+
+```yaml
+route_status: pending
+```
+
+分发完成后改为：
+
+```yaml
+route_status: routed
+```
+
 ### tags
 
 用途：
@@ -298,16 +311,21 @@ tags:
 对 inbox Markdown 执行以下结构修复顺序：
 
 1. 读取 frontmatter。
-2. 删除 7 个字段外的多余字段。
-3. 按固定顺序重排字段。
+2. 删除《全层》知识字段地图规则之外的多余字段。
+3. 按《全层》知识字段地图规则固定顺序重排字段。
 4. 补全 `title`。
 5. 补全 `status: inbox`。
-6. 补全 `created`。
-7. 修正 `source_type`。
-8. 缺失、空值、非法 `material_type` 改为 `unknown`。
-9. 设置 `domain_hint: unknown`。
-10. 缺失或结构非法的 `tags` 改为 `tags: []`。
-11. 再次校验。
+6. 补全 `schema_version: v0.1.0`。
+7. 补全 `knowledge_layer: raw`。
+8. 补全 `captured_at` 和 `created_at`。
+9. 修正 `source_type`。
+10. 缺失、空值、非法 `material_type` 改为 `unknown`。
+11. 设置 `domain_hint: unknown`。
+12. 设置 `route_status: pending`。
+13. 设置 `compile_status: 未编译`。
+14. 设置 raw 阶段默认检索和回答策略。
+15. 缺失或结构非法的 `tags` 改为 `tags: []`。
+16. 再次校验。
 
 校验失败时停止分发，输出失败字段、失败原因和需要用户判断的事项。
 

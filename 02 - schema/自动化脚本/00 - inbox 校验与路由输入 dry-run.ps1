@@ -1,6 +1,6 @@
 <#
 依赖规则：02 - schema/《00 - inbox》路由分发规则.md
-规则版本：v0.5.0
+规则版本：v0.7.0
 脚本职责：检查 inbox、修复 Markdown frontmatter 结构、识别非 Markdown 材料包、输出待 Codex 语义路由输入。
 安全边界：本脚本不移动文件、不删除用户材料、不新建领域目录、不执行 Git/GitHub/Supabase 同步。
 #>
@@ -16,8 +16,80 @@ $ErrorActionPreference = 'Stop'
 $RawRoot = Join-Path $KbaseRoot '00 - raw'
 $InboxPath = Join-Path $RawRoot '00 - inbox'
 
-$ExpectedKeys = @('title', 'status', 'created', 'source_type', 'material_type', 'domain_hint', 'tags')
-$AllowedStatus = @('inbox', 'raw')
+$FieldSchemaVersion = 'v0.1.0'
+$ExpectedKeys = @(
+    'schema_version',
+    'knowledge_id',
+    'title',
+    'knowledge_layer',
+    'wiki_page_type',
+    'process_level',
+    'material_type',
+    'source_type',
+    'source_ref',
+    'source_title',
+    'source_author',
+    'captured_at',
+    'captured_by',
+    'domain_hint',
+    'tags',
+    'route_status',
+    'route_rule_version',
+    'routed_at',
+    'routed_by',
+    'status',
+    'review_status',
+    'created_at',
+    'updated_at',
+    'promoted_at',
+    'promotion_basis',
+    'archived_at',
+    'deprecated_at',
+    'deprecated_reason',
+    'replaced_by',
+    'rejected_reason',
+    'compile_status',
+    'source_refs',
+    'compiled_from',
+    'compiled_to',
+    'compile_rule_version',
+    'compile_batch_id',
+    'compiled_at',
+    'compiled_by',
+    'trust_level',
+    'confidence',
+    'evidence_level',
+    'risk_level',
+    'last_verified_at',
+    'verified_by',
+    'retrieval_scope',
+    'retrieval_priority',
+    'answer_policy',
+    'search_boost',
+    'visibility',
+    'owner',
+    'editable_by',
+    'sensitivity_level',
+    'supersedes',
+    'superseded_by',
+    'version',
+    'changelog_ref',
+    'content_hash',
+    'last_synced_at',
+    'last_synced_by',
+    'sync_status',
+    'sync_error'
+)
+$ArrayKeys = @(
+    'tags',
+    'source_refs',
+    'compiled_from',
+    'compiled_to',
+    'editable_by',
+    'supersedes',
+    'superseded_by'
+)
+$AllowedStatus = @('inbox', 'raw', 'candidate', 'active', 'archived', 'deprecated', 'rejected')
 $AllowedSourceType = @('用户写入', 'Agent回写', '网页剪藏', 'unknown')
 $AllowedMaterialType = @('普通笔记', '对话沉淀', '网页文章', '研究资料', '模板', '指南', '方案', '报告', 'unknown')
 $AllowedDomainHint = @('AI Work', 'Amazon', '认知管理', '财务投资', '设计', '产品', 'unknown')
@@ -94,7 +166,7 @@ function Parse-FrontMatter {
             $value = $matches[2].Trim()
             $keyOrder += $key
 
-            if ($key -eq 'tags') {
+            if ($key -in $ArrayKeys) {
                 if ($value -eq '') {
                     $items = @()
                     $j = $i + 1
@@ -103,11 +175,11 @@ function Parse-FrontMatter {
                         $j++
                     }
                     $map[$key] = $items
-                    $tagsIsArray = $true
+                    if ($key -eq 'tags') { $tagsIsArray = $true }
                     $i = $j - 1
                 } else {
                     $map[$key] = @(Parse-InlineTags $value)
-                    $tagsIsArray = $value.Trim().StartsWith('[')
+                    if ($key -eq 'tags') { $tagsIsArray = $value.Trim().StartsWith('[') }
                 }
             } else {
                 $map[$key] = Remove-OuterQuotes $value
@@ -195,12 +267,65 @@ function Normalize-TagValue {
 function Build-FrontMatter {
     param([hashtable]$Map)
 
+    function ValueOrDefault {
+        param(
+            [hashtable]$Source,
+            [string]$Key,
+            [string]$Default
+        )
+
+        if ($Source.ContainsKey($Key) -and $null -ne $Source[$Key] -and -not [string]::IsNullOrWhiteSpace([string]$Source[$Key])) {
+            return [string]$Source[$Key]
+        }
+        return $Default
+    }
+
+    function AddScalar {
+        param(
+            [System.Collections.Generic.List[string]]$Lines,
+            [string]$Key,
+            [string]$Value
+        )
+
+        $Lines.Add($Key + ": '$(Escape-YamlSingle $Value)'")
+    }
+
+    function AddBare {
+        param(
+            [System.Collections.Generic.List[string]]$Lines,
+            [string]$Key,
+            [string]$Value
+        )
+
+        $Lines.Add($Key + ': ' + $Value)
+    }
+
+    function AddArray {
+        param(
+            [System.Collections.Generic.List[string]]$Lines,
+            [string]$Key,
+            [object[]]$Values
+        )
+
+        $clean = @($Values | ForEach-Object { Remove-OuterQuotes ([string]$_) } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique)
+        if ($clean.Count -eq 0) {
+            AddBare $Lines $Key '[]'
+            return
+        }
+        $Lines.Add($Key + ':')
+        foreach ($item in $clean) {
+            $Lines.Add("  - '$(Escape-YamlSingle $item)'")
+        }
+    }
+
     $title = [string]$Map['title']
-    $status = [string]$Map['status']
-    $created = [string]$Map['created']
     $sourceType = [string]$Map['source_type']
     $materialType = [string]$Map['material_type']
     $domainHint = [string]$Map['domain_hint']
+    $sourceRef = ValueOrDefault $Map 'source_ref' 'unknown'
+    $capturedAt = ValueOrDefault $Map 'captured_at' 'unknown'
+    $createdAt = ValueOrDefault $Map 'created_at' $capturedAt
+    $updatedAt = ValueOrDefault $Map 'updated_at' $createdAt
     $tags = @()
     if ($Map.ContainsKey('tags') -and $null -ne $Map['tags']) {
         $tags = @($Map['tags'] | ForEach-Object { Normalize-TagValue ([string]$_) } | Where-Object { $_ -ne '' } | Select-Object -Unique | Select-Object -First 8)
@@ -208,20 +333,70 @@ function Build-FrontMatter {
 
     $lines = [System.Collections.Generic.List[string]]::new()
     $lines.Add('---')
-    $lines.Add("title: '$(Escape-YamlSingle $title)'")
-    $lines.Add("status: $status")
-    $lines.Add("created: '$(Escape-YamlSingle $created)'")
-    $lines.Add("source_type: $sourceType")
-    $lines.Add("material_type: $materialType")
-    $lines.Add("domain_hint: '$(Escape-YamlSingle $domainHint)'")
-    if ($tags.Count -eq 0) {
-        $lines.Add('tags: []')
-    } else {
-        $lines.Add('tags:')
-        foreach ($tag in $tags) {
-            $lines.Add("  - '$(Escape-YamlSingle $tag)'")
-        }
-    }
+    AddBare $lines 'schema_version' $FieldSchemaVersion
+    AddScalar $lines 'knowledge_id' (ValueOrDefault $Map 'knowledge_id' 'unknown')
+    AddScalar $lines 'title' $title
+    AddBare $lines 'knowledge_layer' 'raw'
+    AddBare $lines 'wiki_page_type' 'not_applicable'
+    AddBare $lines 'process_level' 'not_applicable'
+    AddBare $lines 'material_type' $materialType
+    AddBare $lines 'source_type' $sourceType
+    AddScalar $lines 'source_ref' $sourceRef
+    AddScalar $lines 'source_title' (ValueOrDefault $Map 'source_title' 'unknown')
+    AddScalar $lines 'source_author' (ValueOrDefault $Map 'source_author' 'unknown')
+    AddScalar $lines 'captured_at' $capturedAt
+    AddScalar $lines 'captured_by' (ValueOrDefault $Map 'captured_by' 'unknown')
+    AddScalar $lines 'domain_hint' $domainHint
+    AddArray $lines 'tags' $tags
+    AddBare $lines 'route_status' (ValueOrDefault $Map 'route_status' 'pending')
+    AddBare $lines 'route_rule_version' 'v0.7.0'
+    AddBare $lines 'routed_at' (ValueOrDefault $Map 'routed_at' 'not_applicable')
+    AddScalar $lines 'routed_by' (ValueOrDefault $Map 'routed_by' 'not_applicable')
+    AddBare $lines 'status' (ValueOrDefault $Map 'status' 'inbox')
+    AddBare $lines 'review_status' (ValueOrDefault $Map 'review_status' 'unreviewed')
+    AddScalar $lines 'created_at' $createdAt
+    AddScalar $lines 'updated_at' $updatedAt
+    AddBare $lines 'promoted_at' (ValueOrDefault $Map 'promoted_at' 'not_applicable')
+    AddBare $lines 'promotion_basis' (ValueOrDefault $Map 'promotion_basis' 'not_applicable')
+    AddBare $lines 'archived_at' (ValueOrDefault $Map 'archived_at' 'not_applicable')
+    AddBare $lines 'deprecated_at' (ValueOrDefault $Map 'deprecated_at' 'not_applicable')
+    AddBare $lines 'deprecated_reason' (ValueOrDefault $Map 'deprecated_reason' 'not_applicable')
+    AddBare $lines 'replaced_by' (ValueOrDefault $Map 'replaced_by' 'not_applicable')
+    AddBare $lines 'rejected_reason' (ValueOrDefault $Map 'rejected_reason' 'not_applicable')
+    AddBare $lines 'compile_status' (ValueOrDefault $Map 'compile_status' '未编译')
+    $sourceRefs = @()
+    if ($Map.ContainsKey('source_refs') -and $null -ne $Map['source_refs']) { $sourceRefs = @($Map['source_refs']) }
+    if ($sourceRefs.Count -eq 0 -and $sourceRef -ne 'unknown') { $sourceRefs = @($sourceRef) }
+    AddArray $lines 'source_refs' $sourceRefs
+    AddArray $lines 'compiled_from' $(if ($Map.ContainsKey('compiled_from')) { @($Map['compiled_from']) } else { @() })
+    AddArray $lines 'compiled_to' $(if ($Map.ContainsKey('compiled_to')) { @($Map['compiled_to']) } else { @() })
+    AddBare $lines 'compile_rule_version' (ValueOrDefault $Map 'compile_rule_version' 'not_applicable')
+    AddBare $lines 'compile_batch_id' (ValueOrDefault $Map 'compile_batch_id' 'not_applicable')
+    AddBare $lines 'compiled_at' (ValueOrDefault $Map 'compiled_at' 'not_applicable')
+    AddBare $lines 'compiled_by' (ValueOrDefault $Map 'compiled_by' 'not_applicable')
+    AddBare $lines 'trust_level' (ValueOrDefault $Map 'trust_level' 'raw')
+    AddBare $lines 'confidence' (ValueOrDefault $Map 'confidence' 'unknown')
+    AddBare $lines 'evidence_level' (ValueOrDefault $Map 'evidence_level' 'unknown')
+    AddBare $lines 'risk_level' (ValueOrDefault $Map 'risk_level' 'not_applicable')
+    AddBare $lines 'last_verified_at' (ValueOrDefault $Map 'last_verified_at' 'not_applicable')
+    AddBare $lines 'verified_by' (ValueOrDefault $Map 'verified_by' 'not_applicable')
+    AddBare $lines 'retrieval_scope' (ValueOrDefault $Map 'retrieval_scope' 'explicit_only')
+    AddBare $lines 'retrieval_priority' (ValueOrDefault $Map 'retrieval_priority' 'low')
+    AddScalar $lines 'answer_policy' (ValueOrDefault $Map 'answer_policy' '必须提示未验证')
+    AddBare $lines 'search_boost' (ValueOrDefault $Map 'search_boost' '0')
+    AddBare $lines 'visibility' (ValueOrDefault $Map 'visibility' 'unknown')
+    AddBare $lines 'owner' (ValueOrDefault $Map 'owner' 'unknown')
+    AddArray $lines 'editable_by' $(if ($Map.ContainsKey('editable_by')) { @($Map['editable_by']) } else { @() })
+    AddBare $lines 'sensitivity_level' (ValueOrDefault $Map 'sensitivity_level' 'unknown')
+    AddArray $lines 'supersedes' $(if ($Map.ContainsKey('supersedes')) { @($Map['supersedes']) } else { @() })
+    AddArray $lines 'superseded_by' $(if ($Map.ContainsKey('superseded_by')) { @($Map['superseded_by']) } else { @() })
+    AddBare $lines 'version' (ValueOrDefault $Map 'version' 'v0.1.0')
+    AddBare $lines 'changelog_ref' (ValueOrDefault $Map 'changelog_ref' 'not_applicable')
+    AddBare $lines 'content_hash' (ValueOrDefault $Map 'content_hash' 'unknown')
+    AddBare $lines 'last_synced_at' (ValueOrDefault $Map 'last_synced_at' 'not_applicable')
+    AddBare $lines 'last_synced_by' (ValueOrDefault $Map 'last_synced_by' 'not_applicable')
+    AddBare $lines 'sync_status' (ValueOrDefault $Map 'sync_status' 'pending')
+    AddBare $lines 'sync_error' (ValueOrDefault $Map 'sync_error' 'not_applicable')
     $lines.Add('---')
 
     return ($lines -join "`r`n")
@@ -243,17 +418,22 @@ function Test-MarkdownFrontMatter {
     if ($extra.Count -gt 0) { $issues += ('extra_keys=' + ($extra -join ',')) }
     if (($keyOrder -join '|') -ne ($ExpectedKeys -join '|')) { $issues += 'wrong_key_order' }
     if ([string]::IsNullOrWhiteSpace((Get-MapValue $map 'title'))) { $issues += 'empty_title' }
-    if ([string]::IsNullOrWhiteSpace((Get-MapValue $map 'created'))) { $issues += 'empty_created' }
+    if ([string]::IsNullOrWhiteSpace((Get-MapValue $map 'captured_at'))) { $issues += 'empty_captured_at' }
+    if ([string]::IsNullOrWhiteSpace((Get-MapValue $map 'created_at'))) { $issues += 'empty_created_at' }
 
     $status = Get-MapValue $map 'status'
     $sourceType = Get-MapValue $map 'source_type'
     $materialType = Get-MapValue $map 'material_type'
     $domainHint = Get-MapValue $map 'domain_hint'
 
+    if ((Get-MapValue $map 'schema_version') -ne $FieldSchemaVersion) { $issues += 'invalid_schema_version' }
+    if ((Get-MapValue $map 'knowledge_layer') -ne 'raw') { $issues += 'invalid_knowledge_layer' }
     if ($status -notin $AllowedStatus) { $issues += ('invalid_status=' + $status) }
     if ($sourceType -notin $AllowedSourceType) { $issues += ('invalid_source_type=' + $sourceType) }
     if ($materialType -notin $AllowedMaterialType) { $issues += ('invalid_material_type=' + $materialType) }
     if ($domainHint -notin $AllowedDomainHint) { $issues += ('invalid_domain_hint=' + $domainHint) }
+    if ((Get-MapValue $map 'route_status') -ne 'pending') { $issues += 'invalid_route_status_for_inbox' }
+    if ((Get-MapValue $map 'compile_status') -ne '未编译') { $issues += 'invalid_compile_status_for_inbox' }
     if (-not $Parsed.TagsIsArray) { $issues += 'tags_not_array' }
 
     $top = ($RelativePath -split '[\\/]')[0]
@@ -298,9 +478,23 @@ function Repair-MarkdownFrontMatter {
         $repairReasons += 'set_status_inbox'
     }
 
-    $created = Normalize-DateValue (Get-MapValue $map 'created') $File.LastWriteTime
-    if ($created -ne (Get-MapValue $map 'created')) {
-        $repairReasons += 'normalize_created'
+    $legacyCreated = Get-MapValue $map 'created'
+    $capturedAtInput = Get-MapValue $map 'captured_at'
+    if ([string]::IsNullOrWhiteSpace($capturedAtInput)) {
+        $capturedAtInput = $legacyCreated
+    }
+    $capturedAt = Normalize-DateValue $capturedAtInput $File.LastWriteTime
+    if ($capturedAt -ne (Get-MapValue $map 'captured_at')) {
+        $repairReasons += 'normalize_captured_at'
+    }
+
+    $createdAtInput = Get-MapValue $map 'created_at'
+    if ([string]::IsNullOrWhiteSpace($createdAtInput)) {
+        $createdAtInput = $legacyCreated
+    }
+    $createdAt = Normalize-DateValue $createdAtInput $File.LastWriteTime
+    if ($createdAt -ne (Get-MapValue $map 'created_at')) {
+        $repairReasons += 'normalize_created_at'
     }
 
     $sourceType = Get-MapValue $map 'source_type'
@@ -334,6 +528,9 @@ function Repair-MarkdownFrontMatter {
     if ($keyOrder -contains 'tag') {
         $repairReasons += 'remove_legacy_tag'
     }
+    if ($keyOrder -contains 'created') {
+        $repairReasons += 'remove_legacy_created'
+    }
     if (($keyOrder -join '|') -ne ($ExpectedKeys -join '|')) {
         $repairReasons += 'normalize_key_order'
     }
@@ -345,15 +542,19 @@ function Repair-MarkdownFrontMatter {
         }
     }
 
-    $repairMap = @{
-        title = $title
-        status = $status
-        created = $created
-        source_type = $sourceType
-        material_type = $materialType
-        domain_hint = $domainHint
-        tags = $tags
+    $repairMap = @{}
+    foreach ($key in $map.Keys) {
+        $repairMap[$key] = $map[$key]
     }
+    $repairMap['title'] = $title
+    $repairMap['source_type'] = $sourceType
+    $repairMap['material_type'] = $materialType
+    $repairMap['domain_hint'] = $domainHint
+    $repairMap['captured_at'] = $capturedAt
+    $repairMap['created_at'] = $createdAt
+    $repairMap['updated_at'] = $createdAt
+    $repairMap['status'] = $status
+    $repairMap['tags'] = $tags
 
     $newFrontMatter = Build-FrontMatter $repairMap
     $newContent = $newFrontMatter + "`r`n" + $Split.Body
@@ -605,7 +806,7 @@ foreach ($file in @($files | Where-Object { $_.Extension -ieq '.md' } | Sort-Obj
 
 $summary = [pscustomobject]@{
     RuleFile = '02 - schema/《00 - inbox》路由分发规则.md'
-    RuleVersion = 'v0.5.0'
+    RuleVersion = 'v0.7.0'
     KbaseRoot = $KbaseRoot
     InboxPath = $InboxPath
     InboxFileCount = $files.Count

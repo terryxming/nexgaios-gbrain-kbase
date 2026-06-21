@@ -1,10 +1,10 @@
 # 01 - wiki 知识编译规则
 
-版本：v0.7.0
+版本：v0.9.0
 
 生命周期：Draft
 
-日期：2026-06-20
+日期：2026-06-21
 
 适用范围：`00 - raw` 到 `01 - wiki`
 
@@ -211,7 +211,9 @@ Wiki 页面形态
 是否需要用户确认：是
 ```
 
-raw 编译完成后，必须同步更新 raw frontmatter 中的 `compile_status`。
+raw 编译完成后，必须同步更新 raw frontmatter 中的 `compile_status`、`compiled_to`、`compiled_at`、`compiled_by`、`compile_rule_version`、`compile_batch_id`。
+
+对应 wiki 页面必须同步写入 `source_refs`、`compiled_from`、`compile_rule_version`、`compile_batch_id`。
 
 raw 编译状态字段以以下规则为准：
 
@@ -319,84 +321,118 @@ B 页面：已被替代：[[A]]
 
 ## 9. Wiki Frontmatter 字段规则
 
-Wiki frontmatter 只记录知识状态、页面形态、生命周期、风险和证据来源。
-
-Wiki frontmatter 不记录 raw 材料属性，不重复记录目录路径。
-
-### 9.1 必填字段
-
-必填字段固定为：
-
-```yaml
----
-title:
-status:
-wiki_page_type:
-created:
-updated:
-source_refs: []
-risk_level:
-tags: []
----
-```
-
-字段含义：
-
-| 字段 | 含义 |
-| --- | --- |
-| `title` | Wiki 页面标题。 |
-| `status` | Wiki 知识状态。只允许：`candidate`、`active`、`deprecated`、`rejected`。 |
-| `wiki_page_type` | Wiki 页面形态。只允许：`索引页`、`对象页`、`主题页`、`项目页`、`流程页`、`决策页`、`政策页`、`模板页`、`案例页`、`对比页`。 |
-| `created` | Wiki 页面创建时间。 |
-| `updated` | Wiki 页面最后更新时间。 |
-| `source_refs` | 支撑该页面结论的 raw 来源引用。 |
-| `risk_level` | 该页面知识被错误使用时的风险等级。只允许：`低`、`中`、`高`。 |
-| `tags` | 横向检索标签，用于补充主题词，不替代 Wiki 链接。 |
-
-### 9.2 条件必填字段
-
-条件必填字段只在满足条件时出现。
-
-| 字段 | 含义 |
-| --- | --- |
-| `process_level` | 仅流程页使用。区分 `指南` 和 `SOP`。 |
-| `promoted_at` | 仅 `active` 页面使用。记录晋升为 active 的时间。 |
-| `promotion_basis` | 仅 `active` 页面使用。记录晋升依据。 |
-| `deprecated_at` | 仅 `deprecated` 页面使用。记录降级为 deprecated 的时间。 |
-| `deprecated_reason` | 仅 `deprecated` 页面使用。记录废弃原因。 |
-| `replaced_by` | 仅 `deprecated` 页面使用。记录替代它的新 Wiki 页面。 |
-| `rejected_reason` | 仅 `rejected` 页面使用。记录拒绝原因。 |
-
-流程页必须增加：
-
-```yaml
-process_level:
-```
-
-允许值：
+Wiki frontmatter 使用统一字段地图：
 
 ```text
-指南
-SOP
+02 - schema/《全层》知识字段地图规则.md
 ```
 
-`status: active` 时必须增加：
+Wiki 页面必须保留字段地图中的全部字段。
+
+不适用于 wiki 的字段使用 `not_applicable`、`unknown` 或 `[]`，不得删除字段。
+
+### 9.1 Wiki 层固定字段
+
+Wiki 页面必须满足：
+
+```yaml
+knowledge_layer: wiki
+material_type: not_applicable
+route_status: not_applicable
+compile_status: not_applicable
+```
+
+Wiki 页面不得把 raw 材料类型写入 `material_type`。
+
+Raw 来源必须写入：
+
+```yaml
+source_refs: []
+compiled_from: []
+compile_rule_version:
+compile_batch_id:
+```
+
+`source_refs` 用于支撑页面结论，`compiled_from` 用于编译关系追踪。
+
+`compile_rule_version` 用于追踪本页面使用的编译规则版本。
+
+`compile_batch_id` 用于追踪本页面所属的编译批次。
+
+### 9.2 Wiki 页面状态
+
+`status` 只允许：
+
+```text
+candidate
+active
+deprecated
+rejected
+```
+
+`status: candidate` 默认：
+
+```yaml
+trust_level: reviewed
+retrieval_scope: explicit_only
+answer_policy: 仅作参考
+```
+
+`status: active` 默认：
+
+```yaml
+trust_level: canonical
+retrieval_scope: default
+answer_policy: 可直接回答
+```
+
+质量验收未通过时，禁止把页面设为 `active`。
+
+### 9.3 页面形态字段
+
+`wiki_page_type` 只允许：
+
+```text
+索引页
+对象页
+主题页
+项目页
+流程页
+决策页
+政策页
+模板页
+案例页
+对比页
+```
+
+流程页必须设置：
+
+```yaml
+process_level: 指南
+```
+
+或：
+
+```yaml
+process_level: SOP
+```
+
+非流程页必须设置：
+
+```yaml
+process_level: not_applicable
+```
+
+### 9.4 条件字段
+
+`status: active` 时必须设置：
 
 ```yaml
 promoted_at:
 promotion_basis:
 ```
 
-`promotion_basis` 允许值：
-
-```text
-用户确认
-多源证据
-使用频率
-稳定性
-```
-
-`status: deprecated` 时必须增加：
+`status: deprecated` 时必须设置：
 
 ```yaml
 deprecated_at:
@@ -404,35 +440,13 @@ deprecated_reason:
 replaced_by:
 ```
 
-`status: rejected` 时必须增加：
+`status: rejected` 时必须设置：
 
 ```yaml
 rejected_reason:
 ```
 
-### 9.3 禁止字段
-
-第一版 wiki frontmatter 不使用以下字段：
-
-```text
-domain
-source_type
-material_type
-confidence
-owner
-current_path
-```
-
-禁止原因：
-
-| 字段 | 禁止原因 |
-| --- | --- |
-| `domain` | 容易和目录重复。 |
-| `source_type` | 属于 raw 进入来源，不属于 wiki 知识属性。 |
-| `material_type` | 属于 raw 材料类型，不属于 wiki 页面形态。 |
-| `confidence` | 容易和 `status`、`risk_level` 混用。 |
-| `owner` | 当前没有多人协作权责场景。 |
-| `current_path` | 路径已经由文件位置表达，重复维护会出错。 |
+不满足条件的字段使用 `not_applicable`。
 
 ## 10. Wiki 页面模板规则
 
@@ -472,9 +486,12 @@ current_path
 2. `status` 是否属于允许值。
 3. `wiki_page_type` 是否属于 10 类页面形态。
 4. `risk_level` 是否属于 `低 / 中 / 高`。
-5. `source_refs` 是否指向 raw。
-6. `相关链接` 是否使用类型化链接。
-7. 页面是否保留了模板说明文字。
+5. 由 raw 编译生成或更新的页面，`source_refs` 是否指向 raw。
+6. 由 raw 编译生成或更新的页面，`compiled_from` 是否指向 raw。
+7. 由 raw 编译生成或更新的页面，`compile_rule_version` 是否存在。
+8. 由 raw 编译生成或更新的页面，`compile_batch_id` 是否存在。
+9. `相关链接` 是否使用类型化链接。
+10. 页面是否保留了模板说明文字。
 
 无真实冲突时，禁止保留空的 `冲突与待确认` 小节。
 

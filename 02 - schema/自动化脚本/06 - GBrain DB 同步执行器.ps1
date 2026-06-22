@@ -4,7 +4,7 @@
 - 02 - schema/流水线细则/01 - 知识入口与字段规则.md
 - 02 - schema/流水线细则/06 - GBrain DB 同步与 MCP 查询规则.md
 规则版本：
-- 主手册：v0.4.5
+- 主手册：v0.4.6
 - 字段细则：v0.2.0
 - GBrain DB 同步细则：v0.2.1
 适用阶段：GBrain DB 同步与 MCP 查询
@@ -27,7 +27,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$MainRuleVersion = 'v0.4.5'
+$MainRuleVersion = 'v0.4.6'
 $FieldRuleVersion = 'v0.2.0'
 $SyncRuleVersion = 'v0.2.1'
 $LockPath = Join-Path $DownloadsRoot 'gbrain-db-sync.lock'

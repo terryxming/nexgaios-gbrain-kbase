@@ -1,3 +1,20 @@
+---
+knowledge_id: 'schema-f28928238616'
+title: 'Agent 回写闭环规则'
+knowledge_layer: 'schema'
+lifecycle_status: 'active'
+source: 'not_applicable：not_applicable'
+captured_at: 'not_applicable'
+domain: 'schema'
+tags: []
+wiki_page_type: 'not_applicable'
+compile_status: 'not_applicable'
+compiled_to: []
+trust_level: 'canonical'
+gbrain_db_sync_status: 'pending'
+gbrain_db_sync_error: 'not_applicable'
+---
+
 # Agent 回写闭环规则
 
 版本：v0.3.0
@@ -426,4 +443,3 @@ Agent 禁止：
 12. DB raw 写入成功但本地物化失败时报告回写成功。
 13. 覆盖已有 inbox 文件。
 14. 同一个 `idempotency_key` 创建多条 raw。
-

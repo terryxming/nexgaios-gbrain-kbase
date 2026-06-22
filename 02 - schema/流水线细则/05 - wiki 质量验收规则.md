@@ -1,10 +1,27 @@
+---
+knowledge_id: 'schema-f9ef851876a4'
+title: 'wiki 质量验收规则'
+knowledge_layer: 'schema'
+lifecycle_status: 'active'
+source: 'not_applicable：not_applicable'
+captured_at: 'not_applicable'
+domain: 'schema'
+tags: []
+wiki_page_type: 'not_applicable'
+compile_status: 'not_applicable'
+compiled_to: []
+trust_level: 'canonical'
+gbrain_db_sync_status: 'pending'
+gbrain_db_sync_error: 'not_applicable'
+---
+
 # wiki 质量验收规则
 
-版本：v0.1.0
+版本：v0.1.1
 
 生命周期：Draft
 
-日期：2026-06-21
+日期：2026-06-22
 
 适用范围：wiki 写入验收、质量验收、知识簇验收、验收结论和处理动作
 
@@ -105,3 +122,96 @@
 
 禁止为了通过验收而编造 raw 证据。
 
+## 8. 验收记录落盘
+
+wiki 质量验收必须留下可追溯记录。
+
+验收记录写入位置：
+
+| 场景 | 记录位置 |
+| --- | --- |
+| candidate 晋升 active | `_meta/晋升记录.md` |
+| raw 编译后首次验收 | `_meta/编译日志.md` |
+| 修复后通过 | 原记录追加修复说明 |
+| 不通过且待补材料 | `_meta/待处理索引.md` |
+| 不通过且存在结论冲突 | `_meta/冲突索引.md` |
+
+验收记录至少包含：
+
+```text
+验收时间
+验收对象
+验收触发原因
+验收规则版本
+验收人或执行 Agent
+验收结论
+发现问题
+处理动作
+复验要求
+```
+
+只在聊天中说明验收通过、但没有写入上述记录时，active 晋升不得视为完成。
+
+## 9. 阻断项
+
+出现以下任一问题时，验收结论不得为 `通过`：
+
+1. 页面缺少 14 字段 frontmatter。
+2. `knowledge_layer`、`lifecycle_status`、`wiki_page_type`、`trust_level` 或 `gbrain_db_sync_status` 使用非法值。
+3. `lifecycle_status: active` 但 `trust_level` 不是 `canonical`。
+4. `lifecycle_status: candidate` 但被 `_index.md` 当作默认 active 入口展示。
+5. `依据来源` 缺失、断链或指向旧 inbox 路径且没有同步说明。
+6. `相关链接` 没有关系类型，或链接目标不存在。
+7. 页面正文残留模板说明、补丁标记或空的治理小节。
+8. 存在未解决冲突但未写入 `冲突与待确认` 和 `_meta/冲突索引.md`。
+9. active 页面结论修改后没有同步更新变更记录或晋升记录。
+
+## 10. 修复后复验
+
+验收结论为 `修复后通过` 时，必须满足：
+
+1. 问题可以由当前 Agent 直接修复。
+2. 修复不改变高风险业务判断。
+3. 修复完成后重新执行相关检查项。
+4. 验收记录追加“修复内容”和“复验结论”。
+
+如果修复需要用户判断、补充证据或重新编译 raw，结论必须保持 `不通过`，并进入待处理或冲突索引。
+
+## 11. active 晋升写入规则
+
+candidate 晋升为 active 时，必须同步修改：
+
+```yaml
+lifecycle_status: 'active'
+trust_level: 'canonical'
+gbrain_db_sync_status: 'pending'
+gbrain_db_sync_error: 'not_applicable'
+```
+
+同时必须更新：
+
+1. `_meta/晋升记录.md`。
+2. `_index.md` 中的 active 入口或待处理摘要。
+3. 相关页面的类型化链接，必要时补双向链接。
+
+上述任一写入失败时，不得宣称晋升完成。
+
+## 12. 验收脚本输出契约
+
+后续实现 wiki 验收脚本时，输出必须至少包含：
+
+```text
+checked_files
+passed_files
+fix_after_pass_files
+failed_files
+blocking_issues
+broken_links
+missing_raw_sources
+template_residue
+patch_pollution
+index_updates_required
+meta_records_required
+```
+
+脚本只提供验收观察，不自动编造缺失证据，不自动将 candidate 晋升 active。

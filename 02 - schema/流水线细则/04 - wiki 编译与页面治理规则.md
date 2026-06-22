@@ -1,10 +1,27 @@
+---
+knowledge_id: 'schema-9ba4b5be23e4'
+title: 'wiki 编译与页面治理规则'
+knowledge_layer: 'schema'
+lifecycle_status: 'active'
+source: 'not_applicable：not_applicable'
+captured_at: 'not_applicable'
+domain: 'schema'
+tags: []
+wiki_page_type: 'not_applicable'
+compile_status: 'not_applicable'
+compiled_to: []
+trust_level: 'canonical'
+gbrain_db_sync_status: 'pending'
+gbrain_db_sync_error: 'not_applicable'
+---
+
 # wiki 编译与页面治理规则
 
-版本：v0.1.0
+版本：v0.1.1
 
 生命周期：Draft
 
-日期：2026-06-21
+日期：2026-06-22
 
 适用范围：wiki 目录、索引、治理记录、raw 到 wiki 编译、wiki 页面形态、生命周期、链接规则
 
@@ -263,3 +280,75 @@ Wiki 页面最小结构：
 
 孤立页面只能保持 `candidate`，不能直接进入 `active`。
 
+## 12. 工程执行契约
+
+raw 到 wiki 编译必须留下可复核的本地落盘结果，不能只停留在对话回答中。
+
+每次编译至少执行以下顺序：
+
+1. 解析 raw 当前实际路径，确认 raw 不在 `00 - raw/00 - inbox` 的未路由临时状态中；如果仍在 inbox，只允许生成编译建议，不直接写 active wiki。
+2. 读取候选 wiki 页面，优先判断是否更新已有页面。
+3. 生成本规则第 9 节的固定判定单。
+4. 按风险等级判断是否需要用户确认。
+5. 新建或更新 wiki 页面，默认写入 `lifecycle_status: candidate`。
+6. 更新 raw 的 `compiled_to` 和 `compile_status`，或写入待处理 / 冲突索引。
+7. 更新 `_meta/编译日志.md`；涉及待处理或冲突时，同步更新 `_meta/待处理索引.md` 或 `_meta/冲突索引.md`。
+8. 将被修改的本地 Markdown 的 `gbrain_db_sync_status` 置为 `pending`。
+9. 进入 `05 - wiki 质量验收规则.md`。
+
+固定判定单必须写入 `_meta/编译日志.md` 或当前任务的明确交接记录。
+
+只在聊天中展示判定单、但没有落盘记录时，本次编译不得视为完成。
+
+## 13. 页面命名与唯一性
+
+新建 wiki 页面前必须检查：
+
+1. 同领域目录下是否已有同主题页面。
+2. 全 wiki 是否已有同标题、同义标题或清洗后 slug 相同的页面。
+3. frontmatter `title`、正文 H1、文件名是否一致或高度一致。
+4. 页面路径是否位于 `01 - wiki` 的合法主领域目录下。
+
+出现同主题或 slug 冲突时，必须优先更新已有页面。
+
+确需新建页面时，编译日志必须说明为什么已有页面不能承载。
+
+## 14. 生命周期写入边界
+
+Agent 编译 raw 时默认只能生成或更新 `candidate` wiki。
+
+以下动作必须先经过 `05 - wiki 质量验收规则.md`，并记录晋升依据：
+
+1. 将 `candidate` 改为 `active`。
+2. 将 `trust_level` 改为 `canonical`。
+3. 降级、废弃或拒绝已有 active 页面。
+4. 删除 active 页面正文结论。
+
+只修复错别字、断链、来源补全或模板残留时，可以直接修改 active 页面，但修改后仍必须执行质量验收，并将 `gbrain_db_sync_status` 置为 `pending`。
+
+## 15. 证据来源解析规则
+
+`依据来源` 必须指向当前可定位的 raw，而不是已经失效的旧 inbox 路径或旧 GBrain slug。
+
+如果本地 raw 已路由但 GBrain DB 仍停留在旧 slug，本地 wiki 页面优先使用当前本地 raw 路径或 Obsidian 链接，并在编译日志中标记：
+
+```text
+DB 同步待完成，旧 slug 仅作为临时读回入口。
+```
+
+如果 raw 只存在于 GBrain DB raw 即时记忆、本地尚未物化或无法定位，禁止直接生成 active wiki；只能生成 candidate 草案或待处理记录。
+
+## 16. 类型化链接格式
+
+`相关链接` 必须使用可被人和脚本识别的类型化格式。
+
+推荐格式：
+
+```markdown
+- 上位知识：[[页面标题]] - 关系说明
+- 同一项目：[[页面标题]] - 关系说明
+```
+
+每条链接必须同时包含关系类型和目标页面。
+
+无目标页面时保留空项没有意义，应删除该关系类型或写入待处理索引。

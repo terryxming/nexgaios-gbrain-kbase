@@ -1,8 +1,25 @@
+---
+knowledge_id: 'schema-4f99bf94e27e'
+title: '01 - wiki 页面模板'
+knowledge_layer: 'schema'
+lifecycle_status: 'active'
+source: 'not_applicable：not_applicable'
+captured_at: 'not_applicable'
+domain: 'schema'
+tags: []
+wiki_page_type: 'not_applicable'
+compile_status: 'not_applicable'
+compiled_to: []
+trust_level: 'canonical'
+gbrain_db_sync_status: 'pending'
+gbrain_db_sync_error: 'not_applicable'
+---
+
 # 01 - wiki 页面模板
 
-模板版本：v0.5.4
+模板版本：v0.5.5
 
-适用规则：`《全层》知识生产流水线操作手册.md` v0.4.5；`流水线细则/01 - 知识入口与字段规则.md` v0.2.0；`流水线细则/04 - wiki 编译与页面治理规则.md` v0.1.0；`流水线细则/05 - wiki 质量验收规则.md` v0.1.0
+适用规则：`《全层》知识生产流水线操作手册.md` v0.4.6；`流水线细则/01 - 知识入口与字段规则.md` v0.2.0；`流水线细则/04 - wiki 编译与页面治理规则.md` v0.1.1；`流水线细则/05 - wiki 质量验收规则.md` v0.1.1
 
 用途：新建 `01 - wiki` 页面时，以本模板为起点。
 

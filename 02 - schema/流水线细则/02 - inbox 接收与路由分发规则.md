@@ -1,3 +1,20 @@
+---
+knowledge_id: 'schema-9786bc067620'
+title: 'inbox 接收与路由分发规则'
+knowledge_layer: 'schema'
+lifecycle_status: 'active'
+source: 'not_applicable：not_applicable'
+captured_at: 'not_applicable'
+domain: 'schema'
+tags: []
+wiki_page_type: 'not_applicable'
+compile_status: 'not_applicable'
+compiled_to: []
+trust_level: 'canonical'
+gbrain_db_sync_status: 'pending'
+gbrain_db_sync_error: 'not_applicable'
+---
+
 # inbox 接收与路由分发规则
 
 版本：v0.2.1

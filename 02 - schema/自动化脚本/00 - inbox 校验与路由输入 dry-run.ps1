@@ -4,7 +4,7 @@
 - 02 - schema/流水线细则/01 - 知识入口与字段规则.md
 - 02 - schema/流水线细则/02 - inbox 接收与路由分发规则.md
 规则版本：
-- 主手册：v0.4.5
+- 主手册：v0.4.6
 - 字段细则：v0.2.0
 - inbox 细则：v0.2.1
 适用阶段：inbox 接收与路由分发
@@ -23,7 +23,7 @@ $ErrorActionPreference = 'Stop'
 $RawRoot = Join-Path $KbaseRoot '00 - raw'
 $InboxPath = Join-Path $RawRoot '00 - inbox'
 
-$RuleVersion = 'v0.4.5'
+$RuleVersion = 'v0.4.6'
 $FieldRuleVersion = 'v0.2.0'
 $DetailRuleVersion = 'v0.2.1'
 $ExpectedKeys = @(

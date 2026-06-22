@@ -255,7 +255,7 @@ Agent 应在不丢失信息的前提下，使用 Obsidian 友好的 Markdown 结
 | Checklist | 执行前后自查 | `- [ ] 读回 GBrain DB` |
 | Mermaid | 流程、状态流转、依赖关系 | raw -> wiki -> active |
 | 代码块 | 命令、配置、模板 | ```yaml / ```text |
-| Wikilink | 关联已有知识页 | `[[Agent 回写链路验收测试]]` |
+| Wikilink | 关联已有知识页 | `[[Agent 真实项目案例库]]` |
 | 分节标题 | 按逻辑拆块 | `## 核心结论`、`## 操作清单` |
 
 格式设计原则：

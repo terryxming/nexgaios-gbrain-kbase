@@ -26,9 +26,9 @@ routed_by: not_applicable
 status: active
 review_status: reviewed
 created_at: 2026-06-20 23:04
-updated_at: 2026-06-21 15:35
+updated_at: 2026-06-22 09:22
 promoted_at: 2026-06-20 23:13
-promotion_basis: 用户确认；2026-06-21 仅补充 Agent 回写链路验收案例，不改变原 active 结论。
+promotion_basis: 用户确认；2026-06-22 删除测试产物引用，不改变原 active 结论。
 archived_at: not_applicable
 deprecated_at: not_applicable
 deprecated_reason: not_applicable
@@ -38,11 +38,9 @@ compile_status: not_applicable
 source_refs:
   - '00 - raw/01 - AI Work/0101 - 学习/0101 - Agent/Agent 工程化与产品化｜第 61–68 章：真实项目实战.md'
   - '00 - raw/01 - AI Work/0101 - 学习/0101 - Agent/Agent 工程化与产品化｜第 69–76 章：方法论沉淀与个人 Agent 系统.md'
-  - '00 - raw/01 - AI Work/0102 - 项目/Nexgaios GBrain/2026-06-21-1525 - Agent 回写链路验收测试.md'
 compiled_from:
   - '00 - raw/01 - AI Work/0101 - 学习/0101 - Agent/Agent 工程化与产品化｜第 61–68 章：真实项目实战.md'
   - '00 - raw/01 - AI Work/0101 - 学习/0101 - Agent/Agent 工程化与产品化｜第 69–76 章：方法论沉淀与个人 Agent 系统.md'
-  - '00 - raw/01 - AI Work/0102 - 项目/Nexgaios GBrain/2026-06-21-1525 - Agent 回写链路验收测试.md'
 compiled_to: []
 compile_rule_version: v0.9.0
 compile_batch_id: compile-20260621-001
@@ -64,7 +62,7 @@ editable_by: []
 sensitivity_level: 内部
 supersedes: []
 superseded_by: []
-version: v0.1.1
+version: v0.1.2
 changelog_ref: _meta/编译日志.md
 content_hash: unknown
 last_synced_at: not_applicable
@@ -82,7 +80,6 @@ sync_error: not_applicable
 3. 电商广告分析 Agent 的目标不是解释广告指标，而是基于数据证据诊断广告表现变化，并输出可执行优化动作。
 4. 不同 Agent 案例应统一沉淀 Goal、Input、Context、Tools、Output、Quality、Workflow 和风险边界。
 5. 项目实战案例的价值，不只是证明某个 Agent 能运行，而是反向沉淀模板、Skill、Eval、工具和项目记忆。
-6. Agent 回写链路案例证明，写入型记忆工具必须先进入 raw 即时记忆，再进入本地 raw inbox，后续经过路由、编译和质量验收后，才能成为默认可用的正式知识。
 
 ## 适用范围
 
@@ -105,7 +102,6 @@ sync_error: not_applicable
 | --- | --- |
 | [[Agent 工程化与产品化｜第 61–68 章：真实项目实战]] | 知识管理 Agent、电商广告分析 Agent、客服 Agent、PRD Agent、Code Review Agent 等案例框架。 |
 | [[Agent 工程化与产品化｜第 69–76 章：方法论沉淀与个人 Agent 系统]] | Agent 设计方法论、工程模板、Skill 化、Eval 资产和个人 Agent 工作台。 |
-| [[2026-06-21-1525 - Agent 回写链路验收测试]] | Codex 通过 MCP 调用受限 raw 回写工具，完成 DB raw 即时记忆、本地 raw inbox 物化、检索召回和后续编译闭环的验收记录。 |
 
 ## 案例总览
 
@@ -117,7 +113,6 @@ sync_error: not_applicable
 | PRD / 需求拆解 Agent | 将模糊需求拆成目标、边界、流程和验收标准。 | PRD、用户故事、验收标准、任务拆分。 | 需求边界清晰，可进入研发协作。 |
 | Code Review Agent | 审查代码变更中的风险、缺陷和测试缺口。 | Review 发现、风险等级、修复建议。 | 发现优先级明确，证据绑定代码位置。 |
 | 个人 Agent 工作台 | 整合常用任务、知识库、工具、Skill、模板和评估。 | 工作台入口、任务模板、Skill 库、记忆系统。 | 可持续复用，可治理，可扩展。 |
-| Agent raw 回写链路 | 将用户确认的 Agent 对话内容先写入 DB raw 即时记忆，再物化为本地 raw，进入后续治理流程。 | raw DB 页面、本地 raw inbox 文件、可检索即时记忆、编译闭环字段。 | 写工具受限、不可直接改 active wiki、必须保留 raw 证据、正式知识需经过编译和验收。 |
 
 ## 案例沉淀字段
 
@@ -146,6 +141,4 @@ sync_error: not_applicable
 - 下位案例：[[客服回复 Agent]]
 - 下位案例：[[PRD 需求拆解 Agent]]
 - 下位案例：[[Code Review Agent]]
-- 下位案例：[[2026-06-21-1525 - Agent 回写链路验收测试]]
 - 证据来源：[[Agent 工程化与产品化｜第 61–68 章：真实项目实战]]
-- 证据来源：[[2026-06-21-1525 - Agent 回写链路验收测试]]

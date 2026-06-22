@@ -13,6 +13,8 @@ compiled_to: []
 trust_level: 'canonical'
 gbrain_db_sync_status: 'pending'
 gbrain_db_sync_error: 'not_applicable'
+memory_type: 'not_applicable'
+continuity_db_status: 'not_applicable'
 ---
 
 # GBrain DB 同步与 MCP 查询规则
@@ -160,7 +162,7 @@ gbrain_db_sync_status: 'pending'
 
 1. 目标文件存在。
 2. 目标路径位于本规则第 3 章同步范围内。
-3. 目标 Markdown 通过 `01 - 知识入口与字段规则.md` 的 14 字段 frontmatter 契约校验。
+3. 目标 Markdown 通过 `01 - 知识入口与字段规则.md` 的 16 字段 frontmatter 契约校验。
 4. `knowledge_layer` 必须是 `raw`、`wiki` 或 `schema`。
 5. `gbrain_db_sync_status` 必须是合法枚举值。
 

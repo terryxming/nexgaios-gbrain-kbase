@@ -4,8 +4,8 @@
 - 02 - schema/流水线细则/01 - 知识入口与字段规则.md
 - 02 - schema/流水线细则/06 - GBrain DB 同步与 MCP 查询规则.md
 规则版本：
-- 主手册：v0.4.7
-- 字段细则：v0.2.0
+- 主手册：v0.4.13
+- 字段细则：v0.2.2
 - GBrain DB 同步细则：v0.2.1
 适用阶段：GBrain DB 同步与 MCP 查询
 脚本职责：读取路由结果清单与 pending frontmatter，生成 GBrain DB 同步计划，执行 GBrain sync dry-run，输出同步诊断报告。
@@ -27,8 +27,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$MainRuleVersion = 'v0.4.7'
-$FieldRuleVersion = 'v0.2.0'
+$MainRuleVersion = 'v0.4.13'
+$FieldRuleVersion = 'v0.2.2'
 $SyncRuleVersion = 'v0.2.1'
 $LockPath = Join-Path $DownloadsRoot 'gbrain-db-sync.lock'
 
@@ -63,11 +63,15 @@ $RequiredFrontmatterFields = @(
     'compiled_to',
     'trust_level',
     'gbrain_db_sync_status',
-    'gbrain_db_sync_error'
+    'gbrain_db_sync_error',
+    'memory_type',
+    'continuity_db_status'
 )
 
 $AllowedKnowledgeLayers = @('raw', 'wiki', 'schema')
 $AllowedGbrainSyncStatuses = @('pending', 'synced', 'failed', 'excluded', 'not_applicable')
+$AllowedMemoryTypes = @('not_applicable', 'working', 'episodic', 'semantic', 'procedural', 'preference', 'unknown')
+$AllowedContinuityDbStatuses = @('not_applicable', 'active', 'superseded', 'failed', 'unknown')
 
 function Split-Markdown {
     param([string]$Content)
@@ -223,6 +227,20 @@ function Test-FrontMatterContract {
         $invalid += "gbrain_db_sync_status 非法：$syncStatus"
     }
 
+    $memoryType = [string]$fm['memory_type']
+    if (-not [string]::IsNullOrWhiteSpace($memoryType) -and $AllowedMemoryTypes -notcontains $memoryType) {
+        $invalid += "memory_type 非法：$memoryType"
+    }
+
+    $continuityDbStatus = [string]$fm['continuity_db_status']
+    if (-not [string]::IsNullOrWhiteSpace($continuityDbStatus) -and $AllowedContinuityDbStatuses -notcontains $continuityDbStatus) {
+        $invalid += "continuity_db_status 非法：$continuityDbStatus"
+    }
+
+    if ($memoryType -eq 'not_applicable' -and -not [string]::IsNullOrWhiteSpace($continuityDbStatus) -and $continuityDbStatus -ne 'not_applicable') {
+        $invalid += 'memory_type 与 continuity_db_status 语义不一致'
+    }
+
     return [pscustomobject]@{
         frontmatter_valid = ($missing.Count -eq 0 -and $invalid.Count -eq 0)
         has_frontmatter = [bool]$MarkdownRecord.HasFrontMatter
@@ -230,6 +248,8 @@ function Test-FrontMatterContract {
         invalid_fields = $invalid
         knowledge_layer = $layer
         gbrain_db_sync_status = $syncStatus
+        memory_type = $memoryType
+        continuity_db_status = $continuityDbStatus
     }
 }
 
@@ -568,7 +588,7 @@ foreach ($key in $recordsById.Keys) {
         } elseif (-not $fieldValidation.frontmatter_valid) {
             $record.sync_action = 'blocked'
             $record.sync_status_after = 'failed'
-            $record.warnings += '目标文件未通过 14 字段 frontmatter 契约校验'
+            $record.warnings += '目标文件未通过 16 字段 frontmatter 契约校验'
         } elseif (-not [string]::IsNullOrWhiteSpace($record.old_slug) -and $record.old_slug -ne $record.new_slug) {
             $record.sync_action = 'rename-or-upsert'
         } elseif ($record.sync_action -eq 'route-result') {

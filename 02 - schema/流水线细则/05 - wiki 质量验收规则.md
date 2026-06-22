@@ -13,6 +13,8 @@ compiled_to: []
 trust_level: 'canonical'
 gbrain_db_sync_status: 'pending'
 gbrain_db_sync_error: 'not_applicable'
+memory_type: 'not_applicable'
+continuity_db_status: 'not_applicable'
 ---
 
 # wiki 质量验收规则
@@ -156,7 +158,7 @@ wiki 质量验收必须留下可追溯记录。
 
 出现以下任一问题时，验收结论不得为 `通过`：
 
-1. 页面缺少 14 字段 frontmatter。
+1. 页面缺少 16 字段 frontmatter。
 2. `knowledge_layer`、`lifecycle_status`、`wiki_page_type`、`trust_level` 或 `gbrain_db_sync_status` 使用非法值。
 3. `lifecycle_status: active` 但 `trust_level` 不是 `canonical`。
 4. `lifecycle_status: candidate` 但被 `_index.md` 当作默认 active 入口展示。

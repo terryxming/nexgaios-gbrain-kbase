@@ -13,13 +13,15 @@ compiled_to: []
 trust_level: 'canonical'
 gbrain_db_sync_status: 'pending'
 gbrain_db_sync_error: 'not_applicable'
+memory_type: 'not_applicable'
+continuity_db_status: 'not_applicable'
 ---
 
 # 00 - raw 材料说明卡模板
 
-模板版本：v0.4.7
+模板版本：v0.4.13
 
-适用规则：`《全层》知识生产流水线操作手册.md` v0.4.7；`流水线细则/01 - 知识入口与字段规则.md` v0.2.0；`流水线细则/02 - inbox 接收与路由分发规则.md` v0.2.1
+适用规则：`《全层》知识生产流水线操作手册.md` v0.4.13；`流水线细则/01 - 知识入口与字段规则.md` v0.2.2；`流水线细则/02 - inbox 接收与路由分发规则.md` v0.3.0
 
 用途：新建 Markdown raw，或为 PDF、图片、截图、Office 文档等非 Markdown 材料创建同名说明卡。
 
@@ -27,7 +29,7 @@ gbrain_db_sync_error: 'not_applicable'
 
 1. 所有新材料先进入 `00 - raw/00 - inbox`。
 2. 非 Markdown 原文件必须有同名 Markdown 说明卡。
-3. frontmatter 只保留知识入口与字段细则规定的 14 个字段。
+3. frontmatter 只保留知识入口与字段细则规定的 16 个字段。
 4. 字符串使用单引号，空列表写 `[]`。
 5. 正文必须保留原始材料说明，不写成正式 wiki 结论。
 
@@ -45,8 +47,10 @@ wiki_page_type: 'not_applicable'
 compile_status: '未编译'
 compiled_to: []
 trust_level: 'raw'
-gbrain_db_sync_status: 'pending'
+gbrain_db_sync_status: 'excluded'
 gbrain_db_sync_error: 'not_applicable'
+memory_type: 'not_applicable'
+continuity_db_status: 'not_applicable'
 ---
 
 # 材料标题

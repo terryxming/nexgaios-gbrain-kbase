@@ -13,20 +13,22 @@ compiled_to: []
 trust_level: 'canonical'
 gbrain_db_sync_status: 'pending'
 gbrain_db_sync_error: 'not_applicable'
+memory_type: 'not_applicable'
+continuity_db_status: 'not_applicable'
 ---
 
 # 01 - wiki 页面模板
 
-模板版本：v0.5.6
+模板版本：v0.5.9
 
-适用规则：`《全层》知识生产流水线操作手册.md` v0.4.7；`流水线细则/01 - 知识入口与字段规则.md` v0.2.0；`流水线细则/04 - wiki 编译与页面治理规则.md` v0.1.1；`流水线细则/05 - wiki 质量验收规则.md` v0.1.1
+适用规则：`《全层》知识生产流水线操作手册.md` v0.4.13；`流水线细则/01 - 知识入口与字段规则.md` v0.2.2；`流水线细则/04 - wiki 编译与页面治理规则.md` v0.1.1；`流水线细则/05 - wiki 质量验收规则.md` v0.1.1
 
 用途：新建 `01 - wiki` 页面时，以本模板为起点。
 
 使用规则：
 
 1. 创建正式 wiki 页面时，删除本说明区。
-2. frontmatter 只保留知识入口与字段细则规定的 14 个字段。
+2. frontmatter 只保留知识入口与字段细则规定的 16 个字段。
 3. 字符串使用单引号，空列表写 `[]`。
 4. 无冲突时删除 `冲突与待确认`。
 5. 无结论演化时删除 `变更记录`。
@@ -49,6 +51,8 @@ compiled_to: []
 trust_level: 'reviewed'
 gbrain_db_sync_status: 'pending'
 gbrain_db_sync_error: 'not_applicable'
+memory_type: 'not_applicable'
+continuity_db_status: 'not_applicable'
 ---
 
 # 页面标题

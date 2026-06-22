@@ -4,9 +4,9 @@
 - 02 - schema/流水线细则/01 - 知识入口与字段规则.md
 - 02 - schema/流水线细则/02 - inbox 接收与路由分发规则.md
 规则版本：
-- 主手册：v0.4.7
-- 字段细则：v0.2.0
-- inbox 细则：v0.2.1
+- 主手册：v0.4.13
+- 字段细则：v0.2.2
+- inbox 细则：v0.3.0
 适用阶段：inbox 接收与路由分发
 脚本职责：检查 inbox、修复 Markdown frontmatter 结构、识别非 Markdown 材料包、输出待 Codex 语义路由输入。
 安全边界：本脚本不移动文件、不删除用户材料、不新建领域目录、不执行 Git/GitHub/Supabase/GBrain DB 同步。
@@ -23,8 +23,8 @@ $ErrorActionPreference = 'Stop'
 $RawRoot = Join-Path $KbaseRoot '00 - raw'
 $InboxPath = Join-Path $RawRoot '00 - inbox'
 
-$RuleVersion = 'v0.4.7'
-$FieldRuleVersion = 'v0.2.0'
+$RuleVersion = 'v0.4.13'
+$FieldRuleVersion = 'v0.2.2'
 $DetailRuleVersion = 'v0.2.1'
 $ExpectedKeys = @(
     'knowledge_id',
@@ -40,7 +40,9 @@ $ExpectedKeys = @(
     'compiled_to',
     'trust_level',
     'gbrain_db_sync_status',
-    'gbrain_db_sync_error'
+    'gbrain_db_sync_error',
+    'memory_type',
+    'continuity_db_status'
 )
 
 $ArrayKeys = @('tags', 'compiled_to')
@@ -52,6 +54,8 @@ $AllowedWikiPageType = @('索引页', '对象页', '主题页', '项目页', '�
 $AllowedCompileStatus = @('未编译', '已编译', '部分编译', '跳过编译', '暂缓编译', '已过期', 'not_applicable')
 $AllowedTrustLevel = @('raw', 'reviewed', 'canonical', 'deprecated', 'unknown')
 $AllowedGbrainDbSyncStatus = @('pending', 'synced', 'failed', 'excluded', 'not_applicable')
+$AllowedMemoryType = @('not_applicable', 'working', 'episodic', 'semantic', 'procedural', 'preference', 'unknown')
+$AllowedContinuityDbStatus = @('not_applicable', 'active', 'superseded', 'failed', 'unknown')
 
 function Remove-OuterQuotes {
     param([string]$Value)
@@ -307,13 +311,24 @@ function New-NormalizedMap {
 
     $tags = @(Get-MapArray $map 'tags' | ForEach-Object { Normalize-TagValue ([string]$_) } | Where-Object { $_ -ne '' } | Select-Object -Unique | Select-Object -First 8)
     $compiledTo = @(Get-MapArray $map 'compiled_to' | ForEach-Object { Remove-OuterQuotes ([string]$_) } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique)
+    $source = Normalize-Source $map
+
+    $memoryType = Get-MapValue $map 'memory_type'
+    if ($memoryType -notin $AllowedMemoryType) {
+        $memoryType = if ($knowledgeId -like 'continuity-*') { 'unknown' } else { 'not_applicable' }
+    }
+
+    $continuityDbStatus = Get-MapValue $map 'continuity_db_status'
+    if ($continuityDbStatus -notin $AllowedContinuityDbStatus) {
+        $continuityDbStatus = if ($knowledgeId -like 'continuity-*') { 'unknown' } else { 'not_applicable' }
+    }
 
     return [ordered]@{
         knowledge_id = $knowledgeId
         title = $title
         knowledge_layer = 'raw'
         lifecycle_status = 'inbox'
-        source = Normalize-Source $map
+        source = $source
         captured_at = $capturedAt
         domain = 'unknown'
         tags = $tags
@@ -321,8 +336,10 @@ function New-NormalizedMap {
         compile_status = '未编译'
         compiled_to = $compiledTo
         trust_level = 'raw'
-        gbrain_db_sync_status = 'pending'
+        gbrain_db_sync_status = 'excluded'
         gbrain_db_sync_error = 'not_applicable'
+        memory_type = $memoryType
+        continuity_db_status = $continuityDbStatus
     }
 }
 
@@ -387,7 +404,8 @@ function Test-MarkdownFrontMatter {
     if ($missing.Count -gt 0) { $issues += ('missing_keys=' + ($missing -join ',')) }
     if ($extra.Count -gt 0) { $issues += ('extra_keys=' + ($extra -join ',')) }
     if (($keyOrder -join '|') -ne ($ExpectedKeys -join '|')) { $issues += 'wrong_key_order' }
-    if ([string]::IsNullOrWhiteSpace((Get-MapValue $map 'knowledge_id'))) { $issues += 'empty_knowledge_id' }
+    $knowledgeId = Get-MapValue $map 'knowledge_id'
+    if ([string]::IsNullOrWhiteSpace($knowledgeId)) { $issues += 'empty_knowledge_id' }
     if ([string]::IsNullOrWhiteSpace((Get-MapValue $map 'title'))) { $issues += 'empty_title' }
     if ([string]::IsNullOrWhiteSpace((Get-MapValue $map 'captured_at'))) { $issues += 'empty_captured_at' }
 
@@ -399,6 +417,8 @@ function Test-MarkdownFrontMatter {
     $trustLevel = Get-MapValue $map 'trust_level'
     $syncStatus = Get-MapValue $map 'gbrain_db_sync_status'
     $syncError = Get-MapValue $map 'gbrain_db_sync_error'
+    $memoryType = Get-MapValue $map 'memory_type'
+    $continuityDbStatus = Get-MapValue $map 'continuity_db_status'
     $source = Get-MapValue $map 'source'
 
     if ($knowledgeLayer -notin $AllowedKnowledgeLayer) { $issues += ('invalid_knowledge_layer=' + $knowledgeLayer) }
@@ -409,6 +429,14 @@ function Test-MarkdownFrontMatter {
     if ($trustLevel -notin $AllowedTrustLevel) { $issues += ('invalid_trust_level=' + $trustLevel) }
     if ($syncStatus -notin $AllowedGbrainDbSyncStatus) { $issues += ('invalid_gbrain_db_sync_status=' + $syncStatus) }
     if ([string]::IsNullOrWhiteSpace($syncError)) { $issues += 'empty_gbrain_db_sync_error' }
+    if ($memoryType -notin $AllowedMemoryType) { $issues += ('invalid_memory_type=' + $memoryType) }
+    if ($continuityDbStatus -notin $AllowedContinuityDbStatus) { $issues += ('invalid_continuity_db_status=' + $continuityDbStatus) }
+    if ($memoryType -eq 'not_applicable' -and $continuityDbStatus -ne 'not_applicable') {
+        $issues += 'memory_type_and_continuity_db_status_mismatch'
+    }
+    if ($knowledgeId -like 'continuity-*' -and $memoryType -eq 'not_applicable') {
+        $issues += 'continuity_id_requires_memory_type'
+    }
 
     $sourceParts = $source -split '：', 2
     if ($sourceParts.Count -ne 2 -or $sourceParts[0] -notin $AllowedSourceType -or [string]::IsNullOrWhiteSpace($sourceParts[1])) {
@@ -441,6 +469,9 @@ function Test-MarkdownFrontMatter {
     if ($top -eq '00 - inbox' -and $trustLevel -ne 'raw') {
         $issues += 'inbox_trust_level_must_be_raw'
     }
+    if ($top -eq '00 - inbox' -and $syncStatus -ne 'excluded') {
+        $issues += 'inbox_gbrain_db_sync_status_must_be_excluded'
+    }
 
     return $issues
 }
@@ -470,6 +501,9 @@ function Repair-MarkdownFrontMatter {
     if ([string]::IsNullOrWhiteSpace((Get-MapValue $Parsed.Map 'captured_at'))) { $reasons += 'fill_captured_at' }
     if ((Get-MapValue $Parsed.Map 'domain') -ne 'unknown') { $reasons += 'set_domain_unknown' }
     if ((Get-MapValue $Parsed.Map 'lifecycle_status') -ne 'inbox') { $reasons += 'set_lifecycle_status_inbox' }
+    if ((Get-MapValue $Parsed.Map 'gbrain_db_sync_status') -ne 'excluded') { $reasons += 'set_gbrain_db_sync_status_excluded' }
+    if ((Get-MapValue $Parsed.Map 'memory_type') -notin $AllowedMemoryType) { $reasons += 'fill_memory_type' }
+    if ((Get-MapValue $Parsed.Map 'continuity_db_status') -notin $AllowedContinuityDbStatus) { $reasons += 'fill_continuity_db_status' }
 
     $newFrontMatter = Write-FrontMatter $normalized
     $newContent = $newFrontMatter + "`r`n" + $Split.Body

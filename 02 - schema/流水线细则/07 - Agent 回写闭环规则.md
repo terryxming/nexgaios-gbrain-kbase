@@ -13,6 +13,8 @@ compiled_to: []
 trust_level: 'canonical'
 gbrain_db_sync_status: 'pending'
 gbrain_db_sync_error: 'not_applicable'
+memory_type: 'not_applicable'
+continuity_db_status: 'not_applicable'
 ---
 
 # Agent 回写闭环规则

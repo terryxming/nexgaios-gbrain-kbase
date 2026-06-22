@@ -1,3 +1,20 @@
+---
+knowledge_id: 'schema-9e267d6b36a3'
+title: 'Agent 资料提炼与 raw 回写 SOP'
+knowledge_layer: 'schema'
+lifecycle_status: 'active'
+source: 'not_applicable：not_applicable'
+captured_at: 'not_applicable'
+domain: 'schema'
+tags: []
+wiki_page_type: 'not_applicable'
+compile_status: 'not_applicable'
+compiled_to: []
+trust_level: 'canonical'
+gbrain_db_sync_status: 'pending'
+gbrain_db_sync_error: 'not_applicable'
+---
+
 # Agent 资料提炼与 raw 回写 SOP
 
 版本：v0.1.0

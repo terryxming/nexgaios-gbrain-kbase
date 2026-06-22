@@ -659,16 +659,29 @@ foreach ($item in $syncPlan) {
     }
 }
 if ($cliDryRun -and $syncPlan.Count -gt 0) {
-    $missingFromCliDryRun = @()
-    foreach ($item in $syncPlan) {
-        if ($item.relative_path -and $cliDryRun.Output -notmatch [regex]::Escape($item.relative_path)) {
-            $missingFromCliDryRun += $item.relative_path
-        }
+    $fullSyncDryRunCount = $null
+    if ($cliDryRun.Output -match 'Full-sync dry run \(strategy=[^)]+\):\s+(\d+)\s+file\(s\) would be imported') {
+        $fullSyncDryRunCount = [int]$matches[1]
     }
-    if ($missingFromCliDryRun.Count -eq $syncPlan.Count) {
-        $diagnostics += 'GBrain CLI dry-run 未显示任何同步计划内的 pending 文件；当前 source 配置或 git diff 状态尚未覆盖这些变更'
-        if ($Execute) {
-            $blockers += '正式执行被阻断：CLI dry-run 未覆盖同步计划内文件'
+
+    $dryRunCoversPlan = $false
+    if ($cliDryRun.ExitCode -eq 0 -and $null -ne $fullSyncDryRunCount -and $fullSyncDryRunCount -ge $syncPlan.Count) {
+        $dryRunCoversPlan = $true
+        $diagnostics += "GBrain CLI dry-run 为 full-sync 计数输出：$fullSyncDryRunCount 个文件覆盖当前同步计划 $($syncPlan.Count) 条"
+    }
+
+    if (-not $dryRunCoversPlan) {
+        $missingFromCliDryRun = @()
+        foreach ($item in $syncPlan) {
+            if ($item.relative_path -and $cliDryRun.Output -notmatch [regex]::Escape($item.relative_path)) {
+                $missingFromCliDryRun += $item.relative_path
+            }
+        }
+        if ($missingFromCliDryRun.Count -eq $syncPlan.Count) {
+            $diagnostics += 'GBrain CLI dry-run 未显示任何同步计划内的 pending 文件；当前 source 配置或 git diff 状态尚未覆盖这些变更'
+            if ($Execute) {
+                $blockers += '正式执行被阻断：CLI dry-run 未覆盖同步计划内文件'
+            }
         }
     }
 }
